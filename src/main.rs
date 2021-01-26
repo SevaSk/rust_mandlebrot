@@ -1,4 +1,4 @@
-
+use std::thread;
 use std::path::Path;
 use std::fs::File;
 use std::io::BufWriter;
@@ -81,17 +81,8 @@ fn convergence_test (number : Complex, iterations : u32) -> f64
     return 1.0;
 }
 
-fn generate_mandlebrot_set (width : u32, height : u32, iterations : u32)
+fn print_mandlebrot_set (width : u32, height : u32, vec : Vec<u8>)
 {
-    let mut vec =  Vec::with_capacity((width*height) as usize);
-    for h in 0..height 
-    {
-        for w in 0..width
-        {
-            vec.push (assign_color_for_pixel (h as f64,w as f64, height as f64, width as f64, iterations));
-        }
-    }
-
     let path = Path::new("image.png");
     let file = File::create(path).unwrap();
 
@@ -105,7 +96,75 @@ fn generate_mandlebrot_set (width : u32, height : u32, iterations : u32)
     writer.write_image_data(&vec[..]).unwrap(); // Save
 }
 
+fn generate_mandlebrot_set (width : u32, height : u32, iterations : u32) -> Vec<u8>
+{
+    let thread_count_y = 2;
+    let thread_count_x = 2;
+
+    let chunkx = width/thread_count_x;
+    let chunky = height/thread_count_y;
+
+    let data = vec![0u8; (width*height) as usize];
+
+    let lock = std::sync::Arc::new(std::sync::Mutex::new(data));
+
+    let mut handles = Vec::new();
+
+    for i in 0..thread_count_x
+    {
+        for j in 0..thread_count_y
+        {
+            let startx = chunkx*i;
+            let endx = startx + chunkx;
+
+            let starty = chunky*j;
+            let endy = starty + chunky;
+
+            let clone = lock.clone();
+            let handle = thread::spawn(move || 
+            {
+                for h in starty..endy
+                {
+                    for w in startx..endx 
+                    {
+                        let color = assign_color_for_pixel (h as f64,w as f64, height as f64, width as f64, iterations);
+                        
+                        let mut v = clone.lock().unwrap();
+
+                        v[(w + width*h) as usize] = color;
+                    }
+
+                }
+            });
+
+            handles.push(handle);
+        }
+    }
+     
+    let mut i = 0;
+    let size = handles.len();
+    for h in handles
+    {
+        h.join().unwrap();
+
+        println! ("{} % done!", ((i + 1)*100) as f32/size as f32);
+        i +=1;
+    }
+
+    let data = std::sync::Arc::try_unwrap(lock).expect("Lock still has multiple owners");
+
+    return data.into_inner().expect("Mutex cannot be locked");
+}
+
 
 fn main() {
-    generate_mandlebrot_set(4000, 4000, 100);
+
+    let width = 40000;
+    let height = 40000;
+    let iterationdepth = 150;
+
+    let mandle_vector = generate_mandlebrot_set(width, height, iterationdepth);
+
+    print_mandlebrot_set(width, height, mandle_vector);
+
 }

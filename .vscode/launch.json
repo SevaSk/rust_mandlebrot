@@ -13,7 +13,6 @@
                     "build",
                     "--bin=mandelbrot",
                     "--package=mandelbrot",
-                    "--release"
                 ],
                 "filter": {
                     "name": "mandelbrot",

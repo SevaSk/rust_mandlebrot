@@ -8,9 +8,3 @@ edition = "2018"
 
 [dependencies]
 png = "0.16.8"
-
-[profile.dev]
-opt-level = 0
-
-[profile.release]
-opt-level = 3
