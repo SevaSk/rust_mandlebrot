@@ -44,6 +44,11 @@ impl Add for Complex
     }
 }
 
+fn convergence_to_color (how_convergent : f64) -> u8
+{
+    return (256.0 - (255.0f64.powf(1.0-how_convergent) - 1.0)) as u8
+}
+
 fn assign_color_for_pixel (h : f64, w : f64, height : f64, width : f64, iterations : u32) -> u8
 {
 
@@ -52,9 +57,9 @@ fn assign_color_for_pixel (h : f64, w : f64, height : f64, width : f64, iteratio
         complex : 3.0/height*h -1.5,
     };
     
-    let how_covergent = convergence_test (num, iterations);
+    let how_convergent = convergence_test (num, iterations);
 
-    return (how_covergent*256.0) as u8
+    return convergence_to_color(how_convergent)
 }
 
 fn convergence_test (number : Complex, iterations : u32) -> f64
@@ -161,7 +166,8 @@ fn main() {
 
     let width = 40000;
     let height = 40000;
-    let iterationdepth = 150;
+
+    let iterationdepth = 400;
 
     let mandle_vector = generate_mandlebrot_set(width, height, iterationdepth);
 
